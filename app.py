@@ -122,4 +122,6 @@ with gr.Blocks(theme = gr.themes.Glass()) as dashboard:
 
 
 if __name__ == "__main__":
-    dashboard.launch(share=True)
+    # Do not request Gradio's public share link when deploying to Hugging Face Spaces
+    # Spaces exposes the app automatically; for local LAN access set server_name.
+    dashboard.launch(share=False, server_name="0.0.0.0", server_port=7860)
