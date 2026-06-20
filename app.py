@@ -122,6 +122,41 @@ with gr.Blocks(theme = gr.themes.Glass()) as dashboard:
 
 
 if __name__ == "__main__":
-    # Do not request Gradio's public share link when deploying to Hugging Face Spaces
-    # Spaces exposes the app automatically; for local LAN access set server_name.
-    dashboard.launch(share=False, server_name="0.0.0.0", server_port=7860)
+    import os
+    import sys
+    import traceback
+
+    port = int(os.environ.get("PORT", 7860))
+    server_name = "0.0.0.0"
+
+    # Try launching without a public share link (preferred on Spaces).
+    # If the environment disallows localhost access, fall back to a shareable link.
+    try:
+        dashboard.launch(share=False, server_name=server_name, server_port=port)
+    except Exception as e:
+        # If Gradio complains that localhost is not accessible, attempt a share link.
+        # Be defensive: some exceptions may not be string-iterable (e.g., booleans),
+        # so coerce to string and safely check substrings.
+        try:
+            err_str = str(e)
+        except Exception:
+            err_str = ""
+
+        match = False
+        try:
+            match = any(sub in err_str for sub in ("localhost is not accessible", "shareable link must be created"))
+        except TypeError:
+            match = False
+
+        if match:
+            try:
+                dashboard.launch(share=True, server_name=server_name, server_port=port)
+            except Exception:
+                print("Fallback share launch also failed:", file=sys.stderr)
+                traceback.print_exc()
+                raise
+        else:
+            # Unknown error: re-raise after printing for diagnostics.
+            print("Gradio launch failed:", file=sys.stderr)
+            traceback.print_exc()
+            raise
